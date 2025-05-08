@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Drawer,
   DrawerClose,
@@ -22,6 +22,10 @@ import {
 } from "./ui/select";
 import { Switch } from "./ui/switch";
 import { Button } from "./ui/button";
+import useFetch from "@/hooks/use-fetch";
+import { Loader2 } from "lucide-react";
+import { createAccount } from "@/actions/dashboard";
+import { toast } from "sonner";
 
 const CreateAccountDrawer = ({ children }) => {
   const [open, setOpen] = useState(false);
@@ -42,8 +46,29 @@ const CreateAccountDrawer = ({ children }) => {
     },
   });
 
-  const onSubmit=async(data)=>{
-    console.log(data);
+  const {
+    data: newAccount,
+    error,
+    fn: createAccountFn,
+    loading: createAccountLoading,
+  } = useFetch(createAccount);
+
+  useEffect(()=>{
+    if(newAccount && !createAccountLoading){
+      toast.success("Account Created Successfully");
+      reset();
+      setOpen(false);
+    }
+  }, [createAccountLoading, newAccount]);
+
+  useEffect(()=>{
+    if(error){
+      toast.error(error.message || "Failed to create account");
+    }
+  },[error]);
+
+  const onSubmit = async (data) => {
+    await createAccountFn(data);
   };
 
   return (
@@ -82,7 +107,7 @@ const CreateAccountDrawer = ({ children }) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="CURRENT">Current</SelectItem>
-                  <SelectItem value="SAVING">Savings</SelectItem>
+                  <SelectItem value="SAVINGS">Savings</SelectItem>
                 </SelectContent>
               </Select>
               {errors.type && (
@@ -132,8 +157,19 @@ const CreateAccountDrawer = ({ children }) => {
                 </Button>
               </DrawerClose>
 
-              <Button type="submit" className="flex-1">
-                Create Account
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={createAccountLoading}
+              >
+                {createAccountLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create Account"
+                )}
               </Button>
             </div>
           </form>
